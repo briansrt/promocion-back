@@ -51,4 +51,20 @@ const validateCredentials = async (req, res) => {
     }
 };
 
-module.exports = { validateCredentials };
+const getUserCodes = async (req, res) => {
+    const { userId } = req.body;
+    try {
+        const codes = await pool.db('promocion').collection('codigos').find({ status: userId }).toArray();
+
+        if (codes.length === 0) {
+            return res.status(404).json({ status: "Error", message: "No hay códigos registrados para este usuario" });
+        }
+
+        res.status(200).json({ status: "Success", codes });
+    } catch (error) {
+        console.error('Error fetching codes:', error);
+        res.status(500).json({ status: "Error", message: "Error interno del servidor" });
+    }
+};
+
+module.exports = { validateCredentials, getUserCodes };
