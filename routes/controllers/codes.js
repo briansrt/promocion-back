@@ -1,5 +1,5 @@
 const pool  = require('../../db/mongo');
-//const CryptoJS = require('crypto-js');
+const { ObjectId } = require('mongodb');
 const moment = require('moment-timezone');
 
 //---------------Validar código promocional---------------------
@@ -17,13 +17,14 @@ const validateCredentials = async (req, res) => {
 
             // Obtener la fecha y hora actual en formato Bogotá
             const currentDateTime = moment().tz('America/Bogota').format('YYYY-MM-DD HH:mm:ss');
+            const userObjectId = new ObjectId(userId);
 
             // Actualizar el código en la base de datos: cambiar el estado a ocupado y asignar el userId y la fecha
             await pool.db('promocion').collection('codigos').updateOne(
                 { code }, // Filtro para encontrar el código
                 { 
                     $set: { 
-                        status: userId, // Cambia el estado a userId para indicar que está ocupado
+                        status: userObjectId, // Cambia el estado a userId para indicar que está ocupado
                         date: currentDateTime // Registra la fecha en la que se usó el código
                     }
                 }
@@ -53,13 +54,11 @@ const validateCredentials = async (req, res) => {
 
 const getUserCodes = async (req, res) => {
     const { userId } = req.body;
+    
     try {
-        const codes = await pool.db('promocion').collection('codigos').find({ status: userId }).toArray();
-
-        if (codes.length === 0) {
-            return res.status(404).json({ status: "Error", message: "No hay códigos registrados para este usuario" });
-        }
-
+        const userObjectId = new ObjectId(userId);  // Convertir el userId a ObjectId
+        const codes = await pool.db('promocion').collection('codigos').find({ status: userObjectId }).toArray();
+        
         res.status(200).json({ status: "Success", codes });
     } catch (error) {
         console.error('Error fetching codes:', error);
@@ -67,4 +66,43 @@ const getUserCodes = async (req, res) => {
     }
 };
 
-module.exports = { validateCredentials, getUserCodes };
+const getWinners = async (req, res) => {
+    try {
+        // Busca todos los códigos con status que no sea "libre" (o sea, los códigos que han sido reclamados)
+        const winners = await pool.db('promocion').collection('codigos').aggregate([
+            {
+                $match: { status: { $ne: 'libre' } }  // Buscar códigos ocupados
+            },
+            {
+                $lookup: {
+                    from: 'user_info',  // Nombre de la colección que tiene la info del usuario
+                    localField: 'status',  // Este campo contiene el ObjectId del usuario
+                    foreignField: 'user_id',  // Relación con el campo _id de user_info
+                    as: 'userInfo'
+                }
+            },
+            {
+                $unwind: '$userInfo'  // Descomponer el array resultante de userInfo
+            },
+            {
+                $project: {
+                    date: 1,
+                    code: 1,
+                    value: 1,  // El valor del premio
+                    'userInfo.nombre': 1,
+                    'userInfo.cedula': 1,
+                    'userInfo.celular': 1,
+                    'userInfo.ciudad': 1
+                }
+            }
+        ]).toArray();
+
+        res.status(200).json({ status: 'success', data: winners });
+    } catch (error) {
+        console.error('Error fetching winners:', error);
+        res.status(500).json({ status: 'error', message: 'Error interno del servidor' });
+    }
+};
+
+
+module.exports = { validateCredentials, getUserCodes, getWinners };

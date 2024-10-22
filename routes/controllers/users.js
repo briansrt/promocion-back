@@ -10,15 +10,13 @@ const validateCredentials = async (req, res) => {
     const hashedPassword = CryptoJS.SHA256(datos.password, process.env.CODE_SECRET_DATA).toString();
     console.log("PASSS: ", hashedPassword);
     try{
-      const users =  await pool.db('promocion').collection('users').find().toArray()
-      console.log("USERS: ", users);
       const login =  await pool.db('promocion').collection('users').findOne({ email: datos.email, pass: hashedPassword });
       if (login) {
         // Obtener la fecha y hora actual en formato Bogotá
         const currentDateTime = moment().tz('America/Bogota').format('YYYY-MM-DD HH:mm:ss');
         // Almacenar en la colección log_login
         await pool.db('promocion').collection('log_login').insertOne({ email: datos.email, role: login.role, date: currentDateTime });
-        res.json({ status: "Bienvenido", user: datos.email, role: login.role});
+        res.json({ status: "Bienvenido", user: datos.email, role: login.role, _id: login._id});
       } else {
         res.json({ status: "ErrorCredenciales" });
       }
