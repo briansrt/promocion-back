@@ -16,7 +16,7 @@ const validateCredentials = async (req, res) => {
         const currentDateTime = moment().tz('America/Bogota').format('YYYY-MM-DD HH:mm:ss');
         // Almacenar en la colección log_login
         await pool.db('promocion').collection('log_login').insertOne({ email: datos.email, role: login.role, date: currentDateTime });
-        res.json({ status: "Bienvenido", user: datos.email, role: login.role, _id: login._id});
+        res.json({ status: "Bienvenido", user: datos.email, role: login.role, _id: login._id, nombre: login.nombre});
       } else {
         res.json({ status: "ErrorCredenciales" });
       }
