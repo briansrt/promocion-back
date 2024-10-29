@@ -37,7 +37,7 @@ const validateCredentials = async (req, res) => {
         } else {
             const newUser = await pool.db('promocion').collection('users').insertOne({ email: datos.email, pass: hashedPassword, role: datos.role });
             const userId = newUser.insertedId;
-            await pool.db('promocion').collection('user_info').insertOne({ user_id: userId, nombre: datos.name, celular: datos.phone, fecha_nac: datos.birthdate, cedula: datos.idNumber, ciudad: datos.city });
+            await pool.db('promocion').collection('user_info').insertOne({ user_id: userId, nombre: datos.name, celular: datos.phone, fecha_nac: datos.birthdate, cedula: datos.idNumber, departamento: datos.departamento, ciudad: datos.city });
             res.status(201).json({ message: `Usuario creado exitosamente` });
         }
     } catch (error) {
