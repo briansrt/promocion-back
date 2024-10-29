@@ -71,7 +71,7 @@ const getWinners = async (req, res) => {
         // Busca todos los códigos con status que no sea "libre" (o sea, los códigos que han sido reclamados)
         const winners = await pool.db('promocion').collection('codigos').aggregate([
             {
-                $match: { status: { $ne: 'libre' } }  // Buscar códigos ocupados
+                $match: { status: { $ne: 'libre' }, value: { $gt: 0 } }  // Buscar códigos ocupados
             },
             {
                 $lookup: {
